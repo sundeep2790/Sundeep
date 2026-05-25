@@ -1,0 +1,29 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Local build artifacts
+datarescue/build/dist/
+datarescue/build/work/
+datarescue/build/installer/
+datarescue/build/dmg_temp_layout/
+
+# Binary files that are downloaded on-the-fly
+datarescue/binaries/win/
+datarescue/binaries/mac/
+datarescue/temp_downloads/
+
+# Local databases and config backups
+datarescue/backend/datarescue.db
+datarescue/config.json
+datarescue/recovered/
+recovered/
+
+# Environment files
+.env
+.venv
+env/
+venv/
+ENV/

@@ -1,0 +1,46 @@
+name: Build macOS DMG Installer
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # Allows manual trigger from the GitHub UI
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Download macOS Engine Binaries
+      run: |
+        python download_binaries.py
+
+    - name: Generate App Icons
+      run: |
+        python generate_icons.py
+
+    - name: Build macOS App & DMG Package
+      run: |
+        python build/build_mac.py
+
+    - name: Upload DMG Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: DataRescue_macOS_Installer
+        path: build/installer/DataRescue_Setup_1.0.0.dmg
+        if-no-files-found: error

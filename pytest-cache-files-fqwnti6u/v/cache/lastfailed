@@ -1,0 +1,11 @@
+{
+  "tests/test_engine_edge.py::TestPhotorecWrapperErrors::test_binary_found_on_linux": true,
+  "tests/test_engine_edge.py::TestPhotorecWrapperErrors::test_binary_not_found_raises": true,
+  "tests/test_engine_edge.py::TestTestdiskWrapperErrors::test_binary_not_found_raises": true,
+  "backend/test_app.py::TestClient": true,
+  "backend/test_app.py::TestDataRescueAPI": true,
+  "backend/test_app.py::TestDataRescueAPI::test_credits_flow": true,
+  "backend/test_app.py::TestDataRescueAPI::test_licence_validation": true,
+  "backend/test_app.py::TestDataRescueAPI::test_stripe_webhook_mock": true,
+  "tests/test_drive_manager.py::test_get_raw_device_path_windows": true
+}
