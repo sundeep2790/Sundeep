@@ -24,7 +24,7 @@ class FileCard(ctk.CTkFrame):
         self.file_path = file_data.get('path', '')
         self.file_name = file_data.get('name', '')
         self.file_size = file_data.get('size', 0)
-        self.file_ext = file_data.get('ext', '').lower()
+        self.file_ext = str(file_data.get('ext', '')).lower()
         
         # Prevent auto-resizing of frame to fit widgets
         self.pack_propagate(False)
@@ -204,9 +204,10 @@ class FileCard(ctk.CTkFrame):
 
     def bind_events_recursively(self, widget):
         # Bind click events, ignoring the checkbox itself so it handles its own clicks
-        if widget != self.chk:
-            widget.bind("<Button-1>", self.on_click)
-            widget.bind("<Double-Button-1>", self.on_double_click)
+        if widget == self.chk:
+            return
+        widget.bind("<Button-1>", self.on_click)
+        widget.bind("<Double-Button-1>", self.on_double_click)
             
         for child in widget.winfo_children():
             self.bind_events_recursively(child)
@@ -251,6 +252,7 @@ class ThumbnailGrid(ctk.CTkScrollableFrame):
         self.select_callback = select_callback
         self.double_click_callback = double_click_callback
         self.cards = []
+        self.extra_widgets = []
         self.files_list = []
         
         # Configure grid column weights to make them align nicely
@@ -261,8 +263,12 @@ class ThumbnailGrid(ctk.CTkScrollableFrame):
         self.clear()
         self.files_list = files_list
         
+        # Cap visible cards to 80 to prevent Windows GDI handle limit crashes
+        MAX_VISIBLE_CARDS = 80
+        display_list = files_list[:MAX_VISIBLE_CARDS]
+        
         # Render cards in a 4-column grid layout
-        for i, file_data in enumerate(files_list):
+        for i, file_data in enumerate(display_list):
             row = i // 4
             col = i % 4
             
@@ -274,6 +280,18 @@ class ThumbnailGrid(ctk.CTkScrollableFrame):
             )
             card.grid(row=row, column=col, padx=8, pady=8, sticky="nsew")
             self.cards.append(card)
+            
+        if len(files_list) > MAX_VISIBLE_CARDS:
+            # Display a status card showing that additional files exist and will be recovered
+            msg_lbl = ctk.CTkLabel(
+                self,
+                text=f"Showing first {MAX_VISIBLE_CARDS} of {len(files_list)} files.\n(All {len(files_list)} selected files will be recovered.)",
+                font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
+                text_color=TEXT_MUTED,
+                justify="center"
+            )
+            msg_lbl.grid(row=(len(display_list) // 4) + 1, column=0, columnspan=4, pady=15)
+            self.extra_widgets.append(msg_lbl)
 
     def clear(self):
         for card in self.cards:
@@ -281,5 +299,11 @@ class ThumbnailGrid(ctk.CTkScrollableFrame):
                 card.destroy()
             except Exception:
                 pass
+        for w in self.extra_widgets:
+            try:
+                w.destroy()
+            except Exception:
+                pass
         self.cards = []
+        self.extra_widgets = []
         self.files_list = []

@@ -47,6 +47,36 @@ class ScreenResults(ctk.CTkFrame):
             btn.pack(side="left", padx=4)
             self.tab_buttons[tab] = btn
             
+        # Select All Button
+        self.select_all_btn = ctk.CTkButton(
+            filter_row,
+            text="Select All",
+            width=90,
+            height=30,
+            corner_radius=15,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
+            fg_color=BG_CARD,
+            text_color=TEXT_BRIGHT,
+            hover_color=BORDER_COLOR,
+            command=self.select_all_files
+        )
+        self.select_all_btn.pack(side="left", padx=(15, 2))
+
+        # Deselect All Button
+        self.deselect_all_btn = ctk.CTkButton(
+            filter_row,
+            text="Deselect All",
+            width=90,
+            height=30,
+            corner_radius=15,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
+            fg_color=BG_CARD,
+            text_color=TEXT_BRIGHT,
+            hover_color=BORDER_COLOR,
+            command=self.deselect_all_files
+        )
+        self.deselect_all_btn.pack(side="left", padx=2)
+            
         # Select "All" tab by default
         self.highlight_tab("All")
         
@@ -294,6 +324,23 @@ class ScreenResults(ctk.CTkFrame):
         self.active_tab = tab
         self.highlight_tab(tab)
         self.apply_filters()
+
+    def select_all_files(self):
+        for f in self.all_files:
+            f['selected'] = True
+        for card in self.thumb_grid.cards:
+            card.selected = True
+            card.update_selection_state()
+        self.recalculate_cost()
+
+    def deselect_all_files(self):
+        for f in self.all_files:
+            f['selected'] = False
+        for card in self.thumb_grid.cards:
+            card.selected = False
+            card.update_selection_state()
+        self.recalculate_cost()
+
 
     def highlight_tab(self, active_tab):
         for tab, btn in self.tab_buttons.items():

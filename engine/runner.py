@@ -127,7 +127,7 @@ class PhotoRecRunner(threading.Thread):
                 filepath = os.path.join(recup_dir, "f0000001.jpg")
                 self.create_mock_image(filepath, "red", "Recovered Photo #1")
                 recovered_files_metadata.append({
-                    "path": filepath, "name": "f0000001.jpg", "size": os.path.getsize(filepath), "ext": ".jpg", "selected": False
+                    "path": filepath, "name": "f0000001.jpg", "size": os.path.getsize(filepath), "ext": ".jpg", "selected": True
                 })
                 self.send_log("Found file: f0000001.jpg (JPEG Image) at block 18")
                 
@@ -138,7 +138,7 @@ class PhotoRecRunner(threading.Thread):
                 with open(filepath, "w") as f:
                     f.write("DataRescue Recovery Log\n---\nThis document contains recovered system information.")
                 recovered_files_metadata.append({
-                    "path": filepath, "name": "f0000002.txt", "size": os.path.getsize(filepath), "ext": ".txt", "selected": False
+                    "path": filepath, "name": "f0000002.txt", "size": os.path.getsize(filepath), "ext": ".txt", "selected": True
                 })
                 self.send_log("Found file: f0000002.txt (Plain Text Document) at block 25")
                 
@@ -148,7 +148,7 @@ class PhotoRecRunner(threading.Thread):
                 filepath = os.path.join(recup_dir, "f0000003.png")
                 self.create_mock_image(filepath, "blue", "Recovered Photo #2")
                 recovered_files_metadata.append({
-                    "path": filepath, "name": "f0000003.png", "size": os.path.getsize(filepath), "ext": ".png", "selected": False
+                    "path": filepath, "name": "f0000003.png", "size": os.path.getsize(filepath), "ext": ".png", "selected": True
                 })
                 self.send_log("Found file: f0000003.png (PNG Image) at block 42")
                 
@@ -160,7 +160,7 @@ class PhotoRecRunner(threading.Thread):
                 with open(filepath, "wb") as f:
                     f.write(b"RIFF....AVI LIST" + os.urandom(100 * 1024))
                 recovered_files_metadata.append({
-                    "path": filepath, "name": "f0000004.mp4", "size": os.path.getsize(filepath), "ext": ".mp4", "selected": False
+                    "path": filepath, "name": "f0000004.mp4", "size": os.path.getsize(filepath), "ext": ".mp4", "selected": True
                 })
                 self.send_log("Found file: f0000004.mp4 (MPEG-4 Video) at block 55")
                 
@@ -171,7 +171,7 @@ class PhotoRecRunner(threading.Thread):
                 with open(filepath, "w") as f:
                     f.write("%PDF-1.4 ... mock pdf content")
                 recovered_files_metadata.append({
-                    "path": filepath, "name": "f0000005.pdf", "size": os.path.getsize(filepath), "ext": ".pdf", "selected": False
+                    "path": filepath, "name": "f0000005.pdf", "size": os.path.getsize(filepath), "ext": ".pdf", "selected": True
                 })
                 self.send_log("Found file: f0000005.pdf (PDF Document) at block 78")
                 
@@ -182,7 +182,7 @@ class PhotoRecRunner(threading.Thread):
                 with open(filepath, "wb") as f:
                     f.write(b"PK\x03\x04" + os.urandom(20 * 1024))
                 recovered_files_metadata.append({
-                    "path": filepath, "name": "f0000006.zip", "size": os.path.getsize(filepath), "ext": ".zip", "selected": False
+                    "path": filepath, "name": "f0000006.zip", "size": os.path.getsize(filepath), "ext": ".zip", "selected": True
                 })
                 self.send_log("Found file: f0000006.zip (ZIP Compressed Archive) at block 91")
                 
@@ -313,7 +313,7 @@ class PhotoRecRunner(threading.Thread):
                                     "name": fentry.name,
                                     "size": size,
                                     "ext": os.path.splitext(fentry.name)[1],
-                                    "selected": False,
+                                    "selected": True,
                                 })
                             except Exception:
                                 pass
@@ -403,7 +403,10 @@ class PhotoRecRunner(threading.Thread):
                         psutil.Process(process.pid).resume()
                     except Exception:
                         pass
-                    process.terminate()
+                    try:
+                        process.terminate()
+                    except Exception:
+                        pass
                     try:
                         process.wait(timeout=3.0)
                     except subprocess.TimeoutExpired:
@@ -462,6 +465,21 @@ class PhotoRecRunner(threading.Thread):
                 time.sleep(1.0)
 
             # ── process finished ─────────────────────────────────────────
+            if self.cancelled:
+                if self.retrieve_early:
+                    photos, videos, docs, others, recovered = _count_recovered()
+                    self.send_log(f"Scan stopped early by user. {len(recovered)} files retrieved so far.")
+                    self.progress_queue.put({
+                        "type": "stats",
+                        "photos": photos, "videos": videos,
+                        "docs": docs, "others": others,
+                    })
+                    self.progress_queue.put({"type": "progress", "value": 1.0})
+                    self.progress_queue.put({"type": "complete", "recovered_files": recovered})
+                else:
+                    self.send_log("PhotoRec process terminated by user.")
+                return
+
             returncode = process.returncode
             if returncode != 0:
                 # NOTE: do NOT call process.communicate() here — stdout/stderr
