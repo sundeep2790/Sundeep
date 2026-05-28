@@ -166,6 +166,28 @@ class ScreenScan(ctk.CTkFrame):
             command=self.cancel_scan
         )
         self.cancel_btn.pack(side="left")
+
+        self.pause_btn = ctk.CTkButton(
+            ctrl_row,
+            text="Pause Scan",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=13, weight="bold"),
+            fg_color=TERTIARY,
+            hover_color="#D97706",
+            height=36,
+            command=self.toggle_pause
+        )
+        self.pause_btn.pack(side="left", padx=10)
+
+        self.stop_retrieve_btn = ctk.CTkButton(
+            ctrl_row,
+            text="Stop & View Files",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=13, weight="bold"),
+            fg_color=PRIMARY,
+            hover_color="#2563EB",
+            height=36,
+            command=self.stop_and_retrieve_scan
+        )
+        self.stop_retrieve_btn.pack(side="left", padx=10)
         
         self.next_btn = ctk.CTkButton(
             ctrl_row,
@@ -228,6 +250,8 @@ class ScreenScan(ctk.CTkFrame):
             block.configure(fg_color=BORDER_COLOR)
             
         self.cancel_btn.configure(state="normal")
+        self.pause_btn.configure(state="normal", text="Pause Scan", fg_color=TERTIARY, hover_color="#D97706")
+        self.stop_retrieve_btn.configure(state="normal")
         self.next_btn.configure(state="disabled")
 
     def on_show(self):
@@ -292,11 +316,15 @@ class ScreenScan(ctk.CTkFrame):
                     self.app.app_state['file_tree'] = msg.get("recovered_files", [])
                     self.next_btn.configure(state="normal")
                     self.cancel_btn.configure(state="disabled")
+                    self.pause_btn.configure(state="disabled")
+                    self.stop_retrieve_btn.configure(state="disabled")
                     self.append_log("Scan finished. Ready to browse results.")
                     
                 elif msg_type == "error":
                     self.append_log(f"Error occurred: {msg.get('message')}")
                     self.cancel_btn.configure(state="normal")
+                    self.pause_btn.configure(state="disabled")
+                    self.stop_retrieve_btn.configure(state="disabled")
                     
                 self.progress_queue.task_done()
         except queue.Empty:
@@ -316,6 +344,27 @@ class ScreenScan(ctk.CTkFrame):
         
         # Navigate back to drive selection
         self.app.show_screen("drive")
+
+    def toggle_pause(self):
+        if not self.runner:
+            return
+        if self.runner.paused:
+            self.runner.resume()
+            self.pause_btn.configure(text="Pause Scan", fg_color=TERTIARY, hover_color="#D97706")
+            self.append_log("Resuming scan...")
+        else:
+            self.runner.pause()
+            self.pause_btn.configure(text="Resume Scan", fg_color=SECONDARY, hover_color="#0D9488")
+            self.append_log("Pausing scan...")
+
+    def stop_and_retrieve_scan(self):
+        if not self.runner:
+            return
+        self.append_log("Stopping scan and retrieving recovered files...")
+        self.runner.stop_and_retrieve()
+        self.pause_btn.configure(state="disabled")
+        self.stop_retrieve_btn.configure(state="disabled")
+        self.cancel_btn.configure(state="disabled")
 
     def go_to_results(self):
         # Navigate to step 3 (results browsing)

@@ -3,6 +3,7 @@
 # Produces a one-folder distribution wrapped by Inno Setup into a .exe installer.
 # Run from the repo root:  pyinstaller build\datarescue_win.spec
 
+import os
 block_cipher = None
 
 a = Analysis(
@@ -78,7 +79,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='../assets/icon.ico',
+    icon='../assets/icon.ico' if os.environ.get('GITHUB_ACTIONS') else None,
 )
 
 coll = COLLECT(

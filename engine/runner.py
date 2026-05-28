@@ -23,6 +23,8 @@ class PhotoRecRunner(threading.Thread):
         self.dest_path = dest_path
         self.progress_queue = progress_queue
         self.cancelled = False
+        self.paused = False
+        self.retrieve_early = False
         self.daemon = True
 
     def run(self):
@@ -49,6 +51,16 @@ class PhotoRecRunner(threading.Thread):
     def cancel(self):
         self.cancelled = True
 
+    def pause(self):
+        self.paused = True
+
+    def resume(self):
+        self.paused = False
+
+    def stop_and_retrieve(self):
+        self.retrieve_early = True
+        self.cancelled = True
+
     def run_mock_scan(self):
         self.send_log("Initializing PhotoRec Simulated Recovery engine...")
         time.sleep(0.5)
@@ -73,8 +85,24 @@ class PhotoRecRunner(threading.Thread):
         # 10 steps of simulation
         total_steps = 10
         for step in range(1, total_steps + 1):
+            # Check pause state
+            while self.paused and not self.cancelled:
+                time.sleep(0.2)
+
             if self.cancelled:
-                self.send_log("Recovery scan aborted by user.")
+                if self.retrieve_early:
+                    self.send_log(f"Scan stopped early by user. {len(recovered_files_metadata)} files retrieved so far.")
+                    self.progress_queue.put({
+                        "type": "stats",
+                        "photos": photos,
+                        "videos": videos,
+                        "docs": docs,
+                        "others": others
+                    })
+                    self.progress_queue.put({"type": "progress", "value": 1.0})
+                    self.progress_queue.put({"type": "complete", "recovered_files": recovered_files_metadata})
+                else:
+                    self.send_log("Recovery scan aborted by user.")
                 return
                 
             progress = step / total_steps
@@ -351,9 +379,39 @@ class PhotoRecRunner(threading.Thread):
             last_block_end = 0
 
             while process.poll() is None:
+                # Check pause state
+                if self.paused and not self.cancelled:
+                    try:
+                        import psutil
+                        psutil.Process(process.pid).suspend()
+                        self.send_log("Scan paused by user.")
+                        while self.paused and not self.cancelled:
+                            time.sleep(0.2)
+                        if not self.cancelled:
+                            psutil.Process(process.pid).resume()
+                            self.send_log("Scan resumed.")
+                    except Exception as e:
+                        logger.error(f"Failed to toggle suspend/resume: {e}")
+
                 if self.cancelled:
+                    try:
+                        import psutil
+                        psutil.Process(process.pid).resume()
+                    except Exception:
+                        pass
                     process.terminate()
-                    self.send_log("PhotoRec process terminated by user.")
+                    if self.retrieve_early:
+                        photos, videos, docs, others, recovered = _count_recovered()
+                        self.send_log(f"Scan stopped early by user. {len(recovered)} files retrieved so far.")
+                        self.progress_queue.put({
+                            "type": "stats",
+                            "photos": photos, "videos": videos,
+                            "docs": docs, "others": others,
+                        })
+                        self.progress_queue.put({"type": "progress", "value": 1.0})
+                        self.progress_queue.put({"type": "complete", "recovered_files": recovered})
+                    else:
+                        self.send_log("PhotoRec process terminated by user.")
                     return
 
                 # File stats — scan ALL recup_dir.* not just recup_dir.1
