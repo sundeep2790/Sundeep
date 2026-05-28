@@ -423,12 +423,44 @@ class PhotoRecRunner(threading.Thread):
         self.progress_queue.put({"type": "status", "message": text})
 
     def create_mock_image(self, filepath, color, text):
-        # Create a simple valid image to be read by Pillow
-        img = Image.new("RGB", (300, 200), color=color)
+        # Create a beautiful vector landscape/art image instead of a generic "X"
+        img = Image.new("RGB", (300, 200), color="#0F172A")
         draw = ImageDraw.Draw(img)
-        # Simple cross pattern
-        draw.line((0, 0, 300, 200), fill="white", width=2)
-        draw.line((0, 200, 300, 0), fill="white", width=2)
-        # BUG-005: anchor="mm" requires a TrueType font — use explicit xy position instead
-        draw.text((10, 90), text, fill="white")
+        
+        filename = os.path.basename(filepath).lower()
+        
+        if "f0000001" in filename:
+            # Sunset scene
+            # Sky Gradient (simplified with overlapping bands)
+            colors = ["#2E1065", "#4C1D95", "#6D28D9", "#7C3AED", "#9061F9", "#A78BFA"]
+            for i, c in enumerate(colors):
+                draw.rectangle([(0, i*20), (300, (i+1)*20)], fill=c)
+                
+            # Sun
+            draw.ellipse([(110, 100), (170, 160)], fill="#F59E0B")
+            
+            # Mountains silhouettes
+            draw.polygon([(0, 200), (80, 110), (160, 200)], fill="#1E1B4B")
+            draw.polygon([(100, 200), (190, 120), (280, 200)], fill="#111827")
+            draw.polygon([(160, 200), (230, 140), (300, 200)], fill="#0F172A")
+            
+        else:
+            # Sunny Day / Green Field scene
+            # Blue Sky
+            draw.rectangle([(0, 0), (300, 120)], fill="#38BDF8")
+            
+            # Sun
+            draw.ellipse([(20, 20), (60, 60)], fill="#FDE047")
+            
+            # White Clouds
+            draw.ellipse([(140, 30), (190, 60)], fill="#FFFFFF")
+            draw.ellipse([(170, 25), (220, 55)], fill="#FFFFFF")
+            
+            # Green Field / Hill
+            draw.ellipse([(-50, 100), (350, 250)], fill="#22C55E")
+            draw.ellipse([(50, 120), (450, 280)], fill="#16A34A")
+            
+        # Draw a sleek overlay label at the bottom
+        draw.rectangle([(0, 175), (300, 200)], fill="#000000", outline=None)
+        draw.text((10, 180), text, fill="#FFFFFF")
         img.save(filepath)

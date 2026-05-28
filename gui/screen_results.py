@@ -364,55 +364,31 @@ class ScreenResults(ctk.CTkFrame):
         count = len(self.selected_files)
         total_size = sum(f.get('size', 0) for f in self.selected_files)
         
-        # 1 credit cost per file
-        cost = count
-        
-        balance = self.app.app_state['credits']
-        is_lifetime = self.app.app_state['is_lifetime']
-        
         # Format sizes
         size_str = self.format_size(total_size)
         
         # Display stats
-        if is_lifetime:
-            self.stats_lbl.configure(
-                text=f"Selected: {count} files ({size_str})  |  Cost: 0 Credits (Lifetime Pro 💎)  |  Balance: Unlimited",
-                text_color=SECONDARY
-            )
-            self.cta_btn.configure(text="Recover Selected Files", fg_color=SECONDARY, hover_color="#0D9488", state="normal" if count > 0 else "disabled")
-        else:
-            self.stats_lbl.configure(
-                text=f"Selected: {count} files ({size_str})  |  Cost: {cost} Credits  |  Balance: {balance} Credits",
-                text_color=TEXT_BRIGHT
-            )
-            
-            # Check balance sufficiency
-            if count == 0:
-                self.cta_btn.configure(text="Recover Selected Files", fg_color=SECONDARY, hover_color="#0D9488", state="disabled")
-            elif balance >= cost:
-                self.cta_btn.configure(text="Recover Selected Files", fg_color=SECONDARY, hover_color="#0D9488", state="normal")
-            else:
-                # Insufficient balance
-                deficit = cost - balance
-                self.stats_lbl.configure(text_color="#EF4444")  # Alert color
-                self.cta_btn.configure(text=f"Buy Credits (Need {deficit} more)", fg_color=PRIMARY, hover_color="#2563EB", state="normal")
+        self.stats_lbl.configure(
+            text=f"Selected: {count} files ({size_str})",
+            text_color=TEXT_BRIGHT
+        )
+        
+        # Check selection state
+        self.cta_btn.configure(
+            text="Recover Selected Files", 
+            fg_color=SECONDARY, 
+            hover_color="#0D9488", 
+            state="normal" if count > 0 else "disabled"
+        )
 
     def on_cta_clicked(self):
         count = len(self.selected_files)
         if count == 0:
             return
             
-        balance = self.app.app_state['credits']
-        is_lifetime = self.app.app_state['is_lifetime']
-        cost = count
-        
-        if not is_lifetime and balance < cost:
-            # Need to buy credits
-            self.app.open_buy_credits()
-        else:
-            # Enough credits or lifetime - proceed to pay & restore step!
-            self.app.app_state['selected_files'] = self.selected_files
-            self.app.show_screen("pay")
+        # Proceed directly to restore step
+        self.app.app_state['selected_files'] = self.selected_files
+        self.app.show_screen("pay")
 
     def refresh_credits_display(self):
         self.recalculate_cost()

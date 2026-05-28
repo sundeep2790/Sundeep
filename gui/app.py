@@ -119,9 +119,9 @@ class CTkApp(ctk.CTk):
         divider = ctk.CTkFrame(self.sidebar, height=1, fg_color=BORDER_COLOR)
         divider.pack(fill="x", padx=15, pady=5)
         
-        # Credit Balance section
+        # Credit Balance section (Disabled for free testing mode)
         self.credits_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        self.credits_frame.pack(fill="x", padx=20, pady=10)
+        # self.credits_frame.pack(fill="x", padx=20, pady=10)
         
         self.balance_lbl = ctk.CTkLabel(
             self.credits_frame,
@@ -129,8 +129,8 @@ class CTkApp(ctk.CTk):
             font=ctk.CTkFont(family="Inter", size=13, weight="bold"),
             text_color="#FFFFFF"
         )
-        self.balance_lbl.pack(anchor="w")
-        self.update_credits_ui()
+        # self.balance_lbl.pack(anchor="w")
+        # self.update_credits_ui()
         
         self.buy_btn = ctk.CTkButton(
             self.credits_frame,
@@ -142,7 +142,7 @@ class CTkApp(ctk.CTk):
             corner_radius=6,
             command=self.open_buy_credits
         )
-        self.buy_btn.pack(fill="x", pady=(8, 0))
+        # self.buy_btn.pack(fill="x", pady=(8, 0))
         
         # Help link at the bottom
         self.help_lbl = ctk.CTkLabel(

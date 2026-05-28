@@ -53,21 +53,69 @@ class FileCard(ctk.CTkFrame):
         img = Image.new("RGBA", (120, 85), color=(0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
         
-        # Color based on ext
+        ext = self.file_ext
         colors = self.get_color_for_extension()
-        fill_color = colors[1]  # Dark mode color as base
+        accent_color = colors[1]  # Theme color based on file type
         
-        # Draw rounded rect/polygon as card icon
-        draw.rounded_rectangle([(10, 10), (110, 75)], radius=6, fill=fill_color)
-        
-        # Draw type text in middle
-        text = self.file_ext.replace('.', '').upper()[:4]
-        if not text:
-            text = "FILE"
-        
-        # Draw text simple way (without font loading which could fail)
-        # In PIL, we can draw text easily
-        draw.text((60, 42), text, fill="#FFFFFF", anchor="mm", font=None)
+        # Draw central icon container
+        # Coordinates: 120 width, 85 height
+        if ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff']:
+            # Photo Icon placeholder (if loading fails)
+            # Draw a photo frame card
+            draw.rounded_rectangle([(30, 12), (90, 72)], radius=5, fill="#1E293B", outline=accent_color, width=2)
+            # Draw mountain peaks inside
+            draw.polygon([(40, 60), (55, 35), (70, 60)], fill="#475569")
+            draw.polygon([(55, 60), (70, 45), (85, 60)], fill="#334155")
+            # Draw sun
+            draw.ellipse([(70, 25), (80, 35)], fill="#F59E0B")
+            
+        elif ext in ['.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx', '.ppt', '.pptx', '.csv']:
+            # Document Icon (Page with folded corner)
+            # Draw page outline
+            page_pts = [(40, 12), (70, 12), (80, 22), (80, 72), (40, 72)]
+            draw.polygon(page_pts, fill="#F8FAFC", outline="#CBD5E1", width=1)
+            # Draw the fold triangle
+            draw.polygon([(70, 12), (70, 22), (80, 22)], fill="#E2E8F0")
+            
+            # Draw text lines
+            draw.line([(46, 32), (74, 32)], fill="#94A3B8", width=2)
+            draw.line([(46, 42), (74, 42)], fill="#94A3B8", width=2)
+            draw.line([(46, 52), (62, 52)], fill="#94A3B8", width=2)
+            
+            # Draw file type badge in accent color at the bottom
+            badge_text = ext.replace('.', '').upper()[:4]
+            draw.rectangle([(40, 58), (80, 72)], fill=accent_color)
+            draw.text((60, 65), badge_text, fill="#FFFFFF", anchor="mm", font=None)
+            
+        elif ext in ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv']:
+            # Video Icon (Media frame + Play button)
+            draw.rounded_rectangle([(25, 15), (95, 70)], radius=6, fill="#0F172A", outline="#334155", width=2)
+            # Draw play triangle in the center
+            draw.polygon([(52, 32), (52, 52), (72, 42)], fill=accent_color)
+            # Filmstrip border lines on left and right
+            for y in range(20, 65, 10):
+                draw.rectangle([(28, y), (32, y+5)], fill="#475569")
+                draw.rectangle([(88, y), (92, y+5)], fill="#475569")
+                
+        elif ext in ['.mp3', '.wav', '.flac', '.ogg', '.m4a']:
+            # Audio Icon (Sound Waves)
+            draw.rounded_rectangle([(35, 15), (85, 70)], radius=5, fill="#1E293B", outline=accent_color, width=2)
+            # Soundwave bars
+            draw.rectangle([(45, 37), (48, 47)], fill=accent_color)
+            draw.rectangle([(51, 30), (54, 55)], fill=accent_color)
+            draw.rectangle([(57, 25), (60, 60)], fill=accent_color)
+            draw.rectangle([(63, 33), (66, 52)], fill=accent_color)
+            draw.rectangle([(69, 40), (72, 45)], fill=accent_color)
+            
+        else:
+            # Other/Archive Icon (Folder or generic binary gear)
+            draw.rounded_rectangle([(30, 20), (90, 68)], radius=5, fill="#1E293B", outline=accent_color, width=2)
+            for y in range(28, 62, 6):
+                draw.line([(57, y), (63, y)], fill=accent_color, width=2)
+            badge_text = ext.replace('.', '').upper()[:3] if ext else "BIN"
+            draw.rounded_rectangle([(45, 45), (75, 60)], radius=3, fill=accent_color)
+            draw.text((60, 52), badge_text, fill="#FFFFFF", anchor="mm", font=None)
+            
         return ctk.CTkImage(light_image=img, dark_image=img, size=(120, 85))
 
     def get_thumbnail(self):

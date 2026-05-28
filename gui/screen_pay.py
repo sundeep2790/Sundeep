@@ -26,14 +26,8 @@ class RestoreThread(threading.Thread):
     def run(self):
         cost = len(self.selected_files)
         try:
-            # 1. Deduct credits via API client
-            if not self.is_lifetime:
-                self.progress_callback("deduct_start", "Contacting license server to deduct credits...")
-                # Deduct credits from client
-                new_balance = self.client.deduct_credits(cost)
-                self.progress_callback("deduct_done", f"Deducted {cost} credits. New balance: {new_balance}.", new_balance)
-            else:
-                self.progress_callback("deduct_done", "Lifetime license active. Skipping credit deduction.", 999999)
+            # 1. Deduct credits via API client (Bypassed for testing/free mode)
+            self.progress_callback("deduct_done", "Skipping credit deduction in free testing mode.", 999999)
                 
             # 2. Copy files to permanent Restored directory
             restore_dir = os.path.join(self.dest_path, "Restored_Files")
@@ -242,8 +236,6 @@ class ScreenPay(ctk.CTkFrame):
     def on_show(self):
         self.selected_files = self.app.app_state['selected_files'] or []
         cost = len(self.selected_files)
-        balance = self.app.app_state['credits']
-        is_lifetime = self.app.app_state['is_lifetime']
         
         # Hide all frames initially
         self.state_a_frame.pack_forget()
@@ -257,17 +249,9 @@ class ScreenPay(ctk.CTkFrame):
             self.state_a_frame.pack(fill="both", expand=True)
             return
             
-        if not is_lifetime and balance < cost:
-            # Show State A: Need to purchase credits
-            self.deficit_lbl.configure(
-                text=f"You have selected {cost} files to recover, which costs {cost} credits.\n"
-                     f"Your current account balance is {balance} credits. You need {cost - balance} more credits."
-            )
-            self.state_a_frame.pack(fill="both", expand=True)
-        else:
-            # Show State B: Start restoring files
-            self.state_b_frame.pack(fill="both", expand=True)
-            self.start_restore_process()
+        # Always proceed to restoration without credit check (Free testing mode)
+        self.state_b_frame.pack(fill="both", expand=True)
+        self.start_restore_process()
 
     def start_restore_process(self):
         self.restore_progress.set(0.0)
