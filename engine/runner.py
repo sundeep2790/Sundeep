@@ -224,8 +224,8 @@ class PhotoRecRunner(threading.Thread):
 
         self.send_log(f"Scanning device: {raw_device}  →  destination: {self.dest_path}")
 
-        # ── build command ────────────────────────────────────────────────
-        cmd = [photorec_bin, "/log", "/d", self.dest_path, "/cmd", raw_device]
+        photorec_dest = os.path.join(self.dest_path, "recup_dir")
+        cmd = [photorec_bin, "/log", "/d", photorec_dest, "/cmd", raw_device]
 
         is_logical = True
         if sys.platform == "win32":
