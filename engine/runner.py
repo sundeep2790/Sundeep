@@ -294,25 +294,29 @@ class PhotoRecRunner(threading.Thread):
                         for fentry in os.scandir(entry.path):
                             if not fentry.is_file():
                                 continue
-                            ext = os.path.splitext(fentry.name)[1].lower()
-                            if ext in (".jpg", ".jpeg", ".png", ".gif", ".bmp",
-                                       ".tiff", ".heic", ".webp", ".cr2", ".nef", ".arw"):
-                                photos += 1
-                            elif ext in (".mp4", ".avi", ".mov", ".mkv", ".wmv",
-                                         ".flv", ".webm", ".m4v", ".3gp"):
-                                videos += 1
-                            elif ext in (".pdf", ".doc", ".docx", ".xls", ".xlsx",
-                                         ".ppt", ".pptx", ".txt", ".rtf", ".csv", ".odt"):
-                                docs += 1
-                            else:
-                                others += 1
-                            recovered.append({
-                                "path": fentry.path,
-                                "name": fentry.name,
-                                "size": fentry.stat().st_size,
-                                "ext": os.path.splitext(fentry.name)[1],
-                                "selected": False,
-                            })
+                            try:
+                                size = fentry.stat().st_size
+                                ext = os.path.splitext(fentry.name)[1].lower()
+                                if ext in (".jpg", ".jpeg", ".png", ".gif", ".bmp",
+                                           ".tiff", ".heic", ".webp", ".cr2", ".nef", ".arw"):
+                                    photos += 1
+                                elif ext in (".mp4", ".avi", ".mov", ".mkv", ".wmv",
+                                             ".flv", ".webm", ".m4v", ".3gp"):
+                                    videos += 1
+                                elif ext in (".pdf", ".doc", ".docx", ".xls", ".xlsx",
+                                             ".ppt", ".pptx", ".txt", ".rtf", ".csv", ".odt"):
+                                    docs += 1
+                                else:
+                                    others += 1
+                                recovered.append({
+                                    "path": fentry.path,
+                                    "name": fentry.name,
+                                    "size": size,
+                                    "ext": os.path.splitext(fentry.name)[1],
+                                    "selected": False,
+                                })
+                            except Exception:
+                                pass
                     except Exception:
                         pass
             except Exception:
@@ -400,6 +404,17 @@ class PhotoRecRunner(threading.Thread):
                     except Exception:
                         pass
                     process.terminate()
+                    try:
+                        process.wait(timeout=3.0)
+                    except subprocess.TimeoutExpired:
+                        try:
+                            process.kill()
+                            process.wait()
+                        except Exception:
+                            pass
+                    except Exception:
+                        pass
+
                     if self.retrieve_early:
                         photos, videos, docs, others, recovered = _count_recovered()
                         self.send_log(f"Scan stopped early by user. {len(recovered)} files retrieved so far.")
