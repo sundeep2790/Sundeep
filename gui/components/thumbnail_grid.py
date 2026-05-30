@@ -118,27 +118,28 @@ class FileCard(ctk.CTkFrame):
             
         return ctk.CTkImage(light_image=img, dark_image=img, size=(120, 85))
 
-    def get_thumbnail(self):
-        if not self.file_path or not os.path.exists(self.file_path):
-            return self.generate_placeholder_image()
-            
-        ext = self.file_ext
-        if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.gif']:
-            try:
-                # Load real image using PIL
-                with Image.open(self.file_path) as pil_img:
-                    # Create thumbnail preserving aspect ratio
-                    pil_img.thumbnail((120, 85))
-                    # Place on a transparent canvas of size 120x85 to center it
-                    canvas = Image.new("RGBA", (120, 85), (0, 0, 0, 0))
-                    x_offset = (120 - pil_img.width) // 2
-                    y_offset = (85 - pil_img.height) // 2
-                    canvas.paste(pil_img, (x_offset, y_offset))
-                    return ctk.CTkImage(light_image=canvas, dark_image=canvas, size=(120, 85))
-            except Exception:
-                pass
+    def load_thumbnail_async(self):
+        try:
+            with Image.open(self.file_path) as pil_img:
+                pil_img.thumbnail((120, 85))
+                canvas = Image.new("RGBA", (120, 85), (0, 0, 0, 0))
+                x_offset = (120 - pil_img.width) // 2
+                y_offset = (85 - pil_img.height) // 2
+                canvas.paste(pil_img, (x_offset, y_offset))
                 
-        return self.generate_placeholder_image()
+                # Schedule UI update in the main thread (thread-safe)
+                self.after(0, lambda: self.set_thumbnail_image(canvas))
+        except Exception:
+            pass
+
+    def set_thumbnail_image(self, canvas_image):
+        try:
+            # Create CTkImage only inside the main thread!
+            ctk_img = ctk.CTkImage(light_image=canvas_image, dark_image=canvas_image, size=(120, 85))
+            self.thumb_label.configure(image=ctk_img)
+            self.thumbnail_ref = ctk_img  # Prevent garbage collection
+        except Exception:
+            pass
 
     def format_size(self, num_bytes):
         for unit in ['B', 'KB', 'MB', 'GB']:
@@ -148,9 +149,16 @@ class FileCard(ctk.CTkFrame):
         return f"{num_bytes:.1f} TB"
 
     def create_widgets(self):
-        # Thumbnail area
-        self.thumb_label = ctk.CTkLabel(self, text="", image=self.get_thumbnail())
+        # Thumbnail area - start with placeholder icon
+        self.placeholder_img = self.generate_placeholder_image()
+        self.thumb_label = ctk.CTkLabel(self, text="", image=self.placeholder_img)
         self.thumb_label.pack(fill="x", padx=6, pady=(6, 2))
+        
+        # Load actual image thumbnail asynchronously if it's an image
+        ext = self.file_ext
+        if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.gif'] and self.file_path and os.path.exists(self.file_path):
+            import threading
+            threading.Thread(target=self.load_thumbnail_async, daemon=True).start()
         
         # File details container
         self.text_container = ctk.CTkFrame(self, fg_color="transparent")
